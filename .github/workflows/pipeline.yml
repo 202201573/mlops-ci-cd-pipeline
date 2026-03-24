@@ -62,6 +62,10 @@ jobs:
         with:
           name: mlruns
 
+      - name: Fix mlruns path
+        run: |
+          mv mlruns/mlruns/* mlruns/ || true
+
       - name: Check threshold
         run: python check_threshold.py
 
