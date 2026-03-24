@@ -6,4 +6,4 @@ WORKDIR /app
 
 RUN echo "Downloading model for RUN_ID=${RUN_ID}"
 
-CMD ["echo", "Model container ready"]
+CMD ["echo", "Model ready"]

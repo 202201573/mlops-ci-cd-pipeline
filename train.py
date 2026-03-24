@@ -4,7 +4,7 @@ import random
 mlflow.set_tracking_uri("file:./mlruns")
 
 with mlflow.start_run() as run:
-    accuracy = 0.80  # change later to 0.90
+    accuracy = 0.80  # change later
 
     mlflow.log_metric("accuracy", accuracy)
 
