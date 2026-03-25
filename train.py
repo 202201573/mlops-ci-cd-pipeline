@@ -1,6 +1,5 @@
 import mlflow
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
@@ -21,17 +20,15 @@ model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
 
-np.random.seed(42)
-flip_indices = np.random.choice(len(y_pred), size=int(0.4 * len(y_pred)), replace=False)
-y_pred[flip_indices] = 1 - y_pred[flip_indices]
-
 accuracy = accuracy_score(y_test, y_pred)
 
 with mlflow.start_run() as run:
     mlflow.log_metric("accuracy", accuracy)
-
+    
+    # These lines must be indented to stay inside the 'with' block
     print("Accuracy:", accuracy)
     print("Run ID:", run.info.run_id)
 
+    # Save Run ID
     with open("model_info.txt", "w") as f:
         f.write(run.info.run_id)
