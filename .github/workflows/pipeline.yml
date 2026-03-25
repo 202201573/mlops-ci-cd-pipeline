@@ -2,13 +2,14 @@ name: ML Pipeline
 
 on:
 push:
-branches: [ main ]
+branches:
+- main
 
 jobs:
-
 validate:
 runs-on: ubuntu-latest
 
+```
 steps:
   - name: Checkout repository
     uses: actions/checkout@v4
@@ -50,13 +51,13 @@ steps:
       path: |
         model_info.txt
         mlruns/
-
+```
 
 deploy:
 needs: validate
 runs-on: ubuntu-latest
 
-
+```
 steps:
   - name: Checkout repository
     uses: actions/checkout@v4
@@ -85,4 +86,4 @@ steps:
     run: |
       RUN_ID=$(cat model_info.txt)
       echo "Building Docker image for Run ID: $RUN_ID"
-
+```
