@@ -22,7 +22,6 @@ jobs:
 
       - name: Configure DVC remote
         env:
-          # These must be set in your GitHub Repo Settings > Secrets
           USER: ${{ secrets.DAGSHUB_USERNAME }}
           TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
@@ -57,13 +56,19 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Install dependencies
+        run: pip install mlflow pandas scikit-learn
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: pipeline-artifacts
 
+      - name: Check threshold
+        run: python check_threshold.py
+
       - name: Mock Docker Build
+        if: success()
         run: |
           RUN_ID=$(cat model_info.txt)
           echo "Building Docker image for Run ID: $RUN_ID"
-          # Here you would typically run: docker build -t my-model:$RUN_ID .
