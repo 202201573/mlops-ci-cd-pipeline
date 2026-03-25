@@ -1,43 +1,31 @@
-import dagshub
 import mlflow
-import pandas as pd
-import numpy as np
+import mlflow.sklearn
+from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+import os
 
-dagshub.init(
-    repo_owner='202201573',
-    repo_name='mlops-ci-cd-pipeline',
-    mlflow=True,
-    token=os.environ.get("DAGSHUB_TOKEN")
-)
-
-data = pd.read_csv("data.csv")
-
-X = data[["feature1", "feature2"]]
-y = data["label"]
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
-
-model = LogisticRegression()
-model.fit(X_train, y_train)
-
-y_pred = model.predict(X_test)
-
-np.random.seed(42)
-flip_indices = np.random.choice(len(y_pred), size=int(0.4 * len(y_pred)), replace=False)
-y_pred[flip_indices] = 1 - y_pred[flip_indices]
-
-accuracy = accuracy_score(y_test, y_pred)
+# Set MLflow tracking URI from environment
+mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
 
 with mlflow.start_run() as run:
-    mlflow.log_metric("accuracy", accuracy)
+    data = load_iris()
+    X_train, X_test, y_train, y_test = train_test_split(
+        data.data, data.target, test_size=0.2, random_state=42
+    )
 
-    print("Accuracy:", accuracy)
-    print("Run ID:", run.info.run_id)
+    model = RandomForestClassifier(n_estimators=10)
+    model.fit(X_train, y_train)
 
+    preds = model.predict(X_test)
+    acc = accuracy_score(y_test, preds)
+
+    mlflow.log_metric("accuracy", acc)
+    mlflow.sklearn.log_model(model, "model")
+
+    # Save run_id to file
     with open("model_info.txt", "w") as f:
         f.write(run.info.run_id)
+
+    print("Accuracy:", acc)
