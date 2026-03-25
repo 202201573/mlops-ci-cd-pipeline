@@ -31,6 +31,11 @@ accuracy = accuracy_score(y_test, y_pred)
 
 # MLflow logging
 with mlflow.start_run() as run:
+<<<<<<< HEAD
+=======
+    accuracy = 0.90  
+
+>>>>>>> 7b1392458b00447a5a3674ac5585927a55d2862e
     mlflow.log_metric("accuracy", accuracy)
     
     # These lines must be indented to stay inside the 'with' block
