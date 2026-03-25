@@ -6,7 +6,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
-dagshub.init(repo_owner='202201573', repo_name='mlops-ci-cd-pipeline', mlflow=True)
+dagshub.init(
+    repo_owner='202201573',
+    repo_name='mlops-ci-cd-pipeline',
+    mlflow=True,
+    token=os.environ.get("DAGSHUB_TOKEN")
+)
 
 data = pd.read_csv("data.csv")
 
