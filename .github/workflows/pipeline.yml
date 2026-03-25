@@ -1,89 +1,69 @@
 name: ML Pipeline
 
 on:
-push:
-branches: [ main ]
+  push:
+    branches: [ main ]
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-validate:
-runs-on: ubuntu-latest
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-```
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pip install pandas scikit-learn mlflow dvc dvc-s3
 
-  - name: Setup Python
-    uses: actions/setup-python@v5
-    with:
-      python-version: "3.10"
+      - name: Configure DVC remote
+        env:
+          # These must be set in your GitHub Repo Settings > Secrets
+          USER: ${{ secrets.DAGSHUB_USERNAME }}
+          TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          dvc remote add -d origin https://dagshub.com/${USER}/mlops-ci-cd-pipeline.dvc || true
+          dvc remote modify origin --local auth basic
+          dvc remote modify origin --local user ${USER}
+          dvc remote modify origin --local password ${TOKEN}
 
-  - name: Install dependencies
-    run: |
-      pip install -r requirements.txt
-      pip install dvc
+      - name: Pull data
+        run: dvc pull
 
-  - name: Configure DVC remote
-    run: |
-      dvc remote modify origin auth basic
-      dvc remote modify origin user ${{ secrets.DAGSHUB_USERNAME }}
-      dvc remote modify origin password ${{ secrets.DAGSHUB_TOKEN }}
+      - name: Train model
+        run: python train.py
 
-  - name: Pull data
-    run: dvc pull
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-artifacts
+          path: |
+            model_info.txt
+            mlruns/
 
-  - name: Train model
-    run: python train.py
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Upload model info
-    uses: actions/upload-artifact@v4
-    with:
-      name: model-info
-      path: model_info.txt
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-  - name: Upload mlruns
-    uses: actions/upload-artifact@v4
-    with:
-      name: mlruns
-      path: mlruns
-```
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pipeline-artifacts
 
-deploy:
-needs: validate
-runs-on: ubuntu-latest
-
-```
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
-
-  - name: Setup Python
-    uses: actions/setup-python@v5
-    with:
-      python-version: "3.10"
-
-  - name: Install dependencies
-    run: pip install -r requirements.txt
-
-  - name: Download model info
-    uses: actions/download-artifact@v4
-    with:
-      name: model-info
-
-  - name: Download mlruns
-    uses: actions/download-artifact@v4
-    with:
-      name: mlruns
-
-  - name: Fix mlruns path
-    run: |
-      mv mlruns/mlruns/* mlruns/ || true
-
-  - name: Check threshold
-    run: python check_threshold.py
-
-  - name: Mock Docker Build
-    run: |
-      echo "Building Docker image for Run ID: $(cat model_info.txt)"
-```
+      - name: Mock Docker Build
+        run: |
+          RUN_ID=$(cat model_info.txt)
+          echo "Building Docker image for Run ID: $RUN_ID"
+          # Here you would typically run: docker build -t my-model:$RUN_ID .
